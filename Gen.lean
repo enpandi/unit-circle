@@ -9,7 +9,7 @@ Everything the frontend displays is computed here, from the verified math in
 `const DATA = {...}`. Run with `lake exe gen`.
 
 LaTeX is emitted as `<span class="ktx">…</span>` placeholders; the frontend
-renders them with KaTeX. `angle-niceness.html` contains no math at all.
+renders them with KaTeX. `index.html` contains no math at all.
 -/
 
 open AngleNiceness

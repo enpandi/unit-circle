@@ -2,7 +2,7 @@
 # Angle niceness — verified math backend
 
 This file is the **single implementation** of the mathematics behind
-`angle-niceness.html`. The HTML page is a thin frontend: all values it shows
+`index.html`. The HTML page is a thin frontend: all values it shows
 (the angle table, exact radicals, minimal polynomials, niceness degrees, and
 the step-by-step derivation trees) are computed here and emitted by the `gen`
 executable (`Gen.lean`) into `angle-niceness-data.js`.
