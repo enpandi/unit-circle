@@ -1,0 +1,121 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Angle niceness</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<style>
+  body{font:15px/1.6 system-ui;max-width:420px;margin:auto;padding:12px}
+  svg{width:100%;display:block}
+  svg g.pt{cursor:pointer}
+  #dec,#inc{width:28px;height:24px;font:inherit;cursor:pointer;
+    border:1px solid #bbb;border-radius:4px;background:#f7f7f7}
+  #dec:disabled,#inc:disabled{opacity:.35;cursor:default}
+  #legend span{cursor:pointer}
+  #tip{position:fixed;display:none;background:#fff;border:1px solid #ccc;
+    border-radius:4px;padding:2px 8px;font-size:13px;pointer-events:none;
+    box-shadow:0 2px 6px rgba(0,0,0,.15);white-space:nowrap;z-index:10}
+  #info{min-height:11em}
+  details{margin:2px 0;padding-left:12px;border-left:2px solid #eee}
+  summary{cursor:pointer;margin-left:-12px;color:#333}
+  .lf{margin:2px 0}
+  .lf::before{content:"– ";color:#aaa}
+  small{color:#777}
+</style>
+
+<h3>Angle niceness</h3>
+<p><small>Every point at angle <span class="ktx">x</span> gets a number
+<span class="ktx">D = [\mathbb{Q}(\cos x, \sin x) : \mathbb{Q}]</span> — the
+degree of the field its two coordinates generate. <span class="ktx">D = 1</span>
+when <span class="ktx">\cos x</span> and <span class="ktx">\sin x</span> are
+rational; the more irrational they are, the bigger <span class="ktx">D</span> —
+so low <span class="ktx">D</span> means a nice angle. Writing
+<span class="ktx">x/2\pi</span> as a fraction <span class="ktx">k/n</span> in
+lowest terms: <span class="ktx">D = \varphi(n)/2</span> if
+<span class="ktx">4 \mid n</span>, else <span class="ktx">\varphi(n)</span>.<br>
+Raise the slider to allow larger <span class="ktx">D</span>; tap any point for
+its exact coordinates and a step-by-step derivation of its
+<span class="ktx">D</span>. The picture is the <b>complete</b> set of angles
+with <span class="ktx">D \le 10</span>: a proved bound
+(<span class="ktx">n \le 2(2D+1)^2</span>, see
+<code>AngleNicenessSpec.lean</code>) caps the possible denominators, so
+nothing is missing — and the set is exactly symmetric under reflection across
+the axes and the <span class="ktx">45^{\circ}</span> diagonals.<br>
+All values and derivations are computed and checked in Lean
+(<code>AngleNiceness.lean</code>); the page only draws them.</small></p>
+<p style="margin:4px 0">tolerance:
+  <button id="dec" title="lower the D cutoff">−</button>
+  <span class="ktx">D \le</span> <b id="tolv"></b>
+  <button id="inc" title="raise the D cutoff">+</button></p>
+<svg id="svg" viewBox="0 0 300 300"></svg>
+<div id="tip"></div>
+<p><small><span id="count"></span> · <span class="ktx">D</span>: <span id="legend"></span></small></p>
+<div id="info"><small>tap a point</small></div>
+
+<script src="angle-niceness-data.js"></script>
+<script>
+/* Frontend only: all math lives in the Lean backend (see AngleNiceness.lean).
+   DATA = {maxN, levels, angles: [{k, n, D, cx, cy, r, info}]} */
+"use strict";
+const A=DATA.angles, LEVELS=DATA.levels, COLORS=DATA.colors;
+const svg=document.getElementById('svg'), tip=document.getElementById('tip');
+const dec=document.getElementById('dec'), inc=document.getElementById('inc');
+let tolIdx=0, sel=null;
+dec.onclick=()=>{if(tolIdx>0){tolIdx--;draw();}};
+inc.onclick=()=>{if(tolIdx<LEVELS.length-1){tolIdx++;draw();}};
+function placeTip(e){
+  tip.style.left=Math.min(e.clientX+14,innerWidth-tip.offsetWidth-8)+"px";
+  tip.style.top=Math.min(e.clientY+14,innerHeight-tip.offsetHeight-8)+"px";}
+const el=(t,at)=>{const e=document.createElementNS("http://www.w3.org/2000/svg",t);
+  for(const a in at)e.setAttribute(a,at[a]);return e;};
+
+/* the legend doubles as the range gauge: click a chip to jump to that
+   level; chips above the current cutoff are dimmed */
+const legend=document.getElementById('legend');
+legend.innerHTML=LEVELS.map((d,i)=>
+  `<span style="color:${COLORS[i]}" title="show all D ≤ ${d}">▮${d}</span>`).join(" ");
+[...legend.children].forEach((e,i)=>e.onclick=()=>{tolIdx=i;draw();});
+renderKtx(document.body);   /* render the static intro/label LaTeX */
+
+/* render the .ktx placeholders emitted by the backend */
+function renderKtx(root){
+  for(const e of root.querySelectorAll('.ktx')){
+    try{e.innerHTML=katex.renderToString(e.textContent)}catch(_){}
+  }
+}
+
+function draw(){const Fm=LEVELS[tolIdx];
+  document.getElementById('tolv').textContent=Fm;
+  dec.disabled=tolIdx===0; inc.disabled=tolIdx===LEVELS.length-1;
+  [...legend.children].forEach((e,i)=>e.style.opacity=i<=tolIdx?1:.3);
+  svg.innerHTML="";
+  svg.append(el('circle',{cx:150,cy:150,r:120,fill:'none',stroke:'#ccc'}),
+             el('line',{x1:20,y1:150,x2:280,y2:150,stroke:'#eee'}),
+             el('line',{x1:150,y1:20,x2:150,y2:280,stroke:'#eee'}));
+  const vis=A.filter(a=>a.D<=Fm);
+  if(sel&&sel.D<=Fm)svg.append(el('line',{x1:150,y1:150,x2:sel.cx,y2:sel.cy,
+    stroke:'#c00',"stroke-dasharray":"3 3"}));
+  for(const a of vis){
+    const g=el('g',{class:'pt'});
+    if(a==sel)g.append(el('line',{x1:a.x1,y1:a.y1,x2:a.x2,y2:a.y2,
+      stroke:'#000','stroke-width':5,'stroke-linecap':'round'}));
+    g.append(el('line',{x1:a.x1,y1:a.y1,x2:a.x2,y2:a.y2,
+      stroke:a.c,'stroke-width':2.2,'stroke-linecap':'round'}));
+    g.append(el('line',{x1:a.x1,y1:a.y1,x2:a.x2,y2:a.y2,
+      stroke:'rgba(0,0,0,0)','stroke-width':9}));
+    g.onclick=()=>{sel=a;draw();show(a);};
+    g.onmouseenter=e=>{
+      a._tip??=(()=>{try{return katex.renderToString(a.hoverTex)}catch(_){return a.hoverTex}})();
+      tip.innerHTML=a._tip; tip.style.display="block"; placeTip(e);};
+    g.onmousemove=placeTip;
+    g.onmouseleave=()=>{tip.style.display="none";};
+    svg.append(g);}
+  document.getElementById('count').textContent=vis.length+" angles visible";}
+
+function show(a){
+  const info=document.getElementById('info');
+  info.innerHTML=a.info;
+  renderKtx(info);}
+
+draw();
+</script>
