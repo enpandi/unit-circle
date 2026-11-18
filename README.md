@@ -1,3 +1,5 @@
+disclaimer -- this entire repo is vibe-coded, i posted because it seems cool. don't understand it too much tbh.
+
 # Angle niceness
 
 An explorable unit circle: the *niceness* of an angle x = 2πk/n is
